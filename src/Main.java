@@ -11,9 +11,9 @@ class Main {
         GameState solution = null;
         GameState g;
         GameState originalGame = null;
-        int counterOfImpossiblePuzzles = 0;
+        int counterOfImpossiblePuzzles = -1;
         while (solution == null) {
-            g = new GameState(6);
+            g = new GameState(10);
 
 //            Integer[][] grid = {{3,5,3,4,4},{5,2,1,1,4},{1,4,5,2,1},{4,2,2,3,3},{1,3,4,2,5}};
 //            g = new GameState(grid);

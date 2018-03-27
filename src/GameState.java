@@ -15,6 +15,7 @@ public class GameState {
                 this.grid[i][j] = new Cell(grid[i][j], this);
             }
         }
+
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
                 this.grid[i][j].setNeighbors();
@@ -24,6 +25,24 @@ public class GameState {
 
     GameState(GameState game) {
         this(game.grid, game.size);
+    }
+
+    GameState(Integer[][] numbers) {
+        this.size = numbers.length;
+        this.grid = new Cell[size][size];
+
+        /* Insert random numbers */
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                this.grid[i][j] = new Cell(i, j, numbers[i][j], this);
+            }
+        }
+
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                this.grid[i][j].setNeighbors();
+            }
+        }
     }
 
     GameState(int size) {
@@ -36,6 +55,7 @@ public class GameState {
                 this.grid[i][j] = new Cell(i, j, ThreadLocalRandom.current().nextInt(1, size + 1), this);
             }
         }
+
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
                 this.grid[i][j].setNeighbors();
@@ -153,13 +173,12 @@ public class GameState {
 
     Set<GameState> getNextStepOptions() {
         Set<GameState> options = new HashSet<>();
-        try {
-            Set<Cell> cellOptions = getNonColoredCells();
-            for (Cell c : cellOptions) {
+        Set<Cell> cellOptions = getNonColoredCells();
+        for (Cell c : cellOptions) {
+            try {
                 GameState g = c.setBlackAndGetState();
                 options.add(g);
-            }
-        } catch (ImpossibleStateException ignored) {
+            } catch (ImpossibleStateException ignored) {}
         }
         return options;
     }
