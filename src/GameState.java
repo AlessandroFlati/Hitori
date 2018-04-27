@@ -1,9 +1,8 @@
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class GameState {
-    private final Cell[][] grid;
+    private Cell[][] grid;
     private final int size;
 
     private GameState(Cell[][] grid, int size) {
@@ -31,7 +30,6 @@ public class GameState {
         this.size = numbers.length;
         this.grid = new Cell[size][size];
 
-        /* Insert random numbers */
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
                 this.grid[i][j] = new Cell(i, j, numbers[i][j], this);
@@ -49,18 +47,61 @@ public class GameState {
         this.size = size;
         this.grid = new Cell[size][size];
 
-        /* Insert random numbers */
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                this.grid[i][j] = new Cell(i, j, ThreadLocalRandom.current().nextInt(1, size + 1), this);
+        int i, j;
+
+        // Initialization
+        for (i = 0; i < size; i++) {
+            for (j = 0; j < size; j++) {
+                this.grid[i][j] = new Cell(i, j, -1, true, this);
             }
         }
-
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
+        for (i = 0; i < size; i++) {
+            for (j = 0; j < size; j++) {
                 this.grid[i][j].setNeighbors();
             }
         }
+
+        GameState solution = gridCreation(this);
+
+        if(solution != null){
+            this.grid = solution.grid;
+
+            this.getBlackCells().forEach(cell -> cell.setValue(ThreadLocalRandom.current().nextInt(1,size+1)));
+
+            for (i = 0; i < size; i++) {
+                for (j = 0; j < size; j++) {
+                    this.grid[i][j].revertColor();
+                }
+            }
+        }
+    }
+
+    private static GameState gridCreation(GameState state) {
+
+        Stack<GameState> stack = new Stack<>();
+        stack.push(state);
+        while (stack.size() != 0) {
+            GameState element = stack.pop();
+
+//            System.out.println("I'm trying with ");
+//            System.out.println(element);
+
+            try {
+                element.creationInfer();
+            } catch (GameState.ImpossibleStateException e) {
+                return null;
+            }
+
+            if (element.isSolved()) {
+                return element;
+            }
+
+            for (GameState g : element.getNextStepCreationOptions()) {
+                stack.push(g);
+            }
+        }
+
+        return null;
     }
 
     Cell[][] getGrid() {
@@ -116,6 +157,16 @@ public class GameState {
             }
         }
         return nonBlackCells;
+    }
+
+    private Set<Cell> getBlackCells() {
+        Set<Cell> blackCells = new HashSet<>();
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                if (grid[i][j].isBlack()) blackCells.add(grid[i][j]);
+            }
+        }
+        return blackCells;
     }
 
     private Set<Cell> getNonColoredCells() {
@@ -183,6 +234,17 @@ public class GameState {
         return options;
     }
 
+    private Set<GameState> getNextStepCreationOptions() {
+        Set<GameState> options = new HashSet<>();
+        List<Cell> cellOptions = new ArrayList<>(getBlackCells());
+        Collections.shuffle(cellOptions);
+        for (Cell c : cellOptions) {
+            Set<GameState> possibleGames = c.setAssignableValuesAndGetStates();
+            options.addAll(possibleGames);
+        }
+        return options;
+    }
+
     boolean isSolved() {
         return this.isLegit() && !this.repetitionsInRows() && !this.repetitionsInColumns();
     }
@@ -192,6 +254,12 @@ public class GameState {
         this.inferSurroundedCell();
         this.inferXYXPattern();
         this.inferXXYZXPattern();
+        if (!this.equals(original)) this.infer();
+    }
+
+    private void creationInfer() throws ImpossibleStateException {
+        GameState original = new GameState(this);
+        // TODO
         if (!this.equals(original)) this.infer();
     }
 
