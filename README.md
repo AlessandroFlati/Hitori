@@ -1,9 +1,10 @@
 # Hitori
-This is a simple [Hitori][wikiLink] game solver. 
+This is a simple [Hitori][wikiLink] game automatic creator and solver. 
 
-At the moment, it's just a container for a basic source code that will generate random Hitori puzzles until it finds one that can be solved, and then solves it using BTS and some basic logical/mathematical inferences.
+If interested, take a look at the [article][articleLink] I wrote about it (the code changed since I wrote the article).
 
-If interested, watch/star the repository and I'll take the project to the next step. There's a lot that can still be done (starting from generating solvable puzzles! =D).
-
+Watch/star the repository so that I can take the project to the next step. 
+There's a lot that can still be done, like refining the generator in order to create games with **unique** solutions. Or a GUI. Or a mobile app based on this!
 
 [wikiLink]: https://en.wikipedia.org/wiki/Hitori
+[articleLink]: https://www.codementor.io/alessandroflati/why-you-shouldn-t-rely-entirely-on-machine-learning-htgrbk1vu

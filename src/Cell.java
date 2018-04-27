@@ -1,7 +1,4 @@
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class Cell {
     private int value;
@@ -36,7 +33,7 @@ public class Cell {
         }
     }
 
-    public Cell(int i, int j, int value, boolean black, GameState gameState) {
+    Cell(int i, int j, int value, boolean black, GameState gameState) {
         this(i,j,value,gameState);
         this.black = black;
     }
@@ -82,6 +79,29 @@ public class Cell {
             }
             for (Cell c : this.getColumn()) {
                 if (c.getValue() == this.value && !c.equals(this)) c.setBlack();
+            }
+        }
+    }
+
+
+    void setCreationWhite() throws AlreadyColoredException, GameState.ImpossibleStateException {
+        if (this.white) return;
+        if (this.black) throw new AlreadyColoredException();
+        else {
+            this.white = true;
+            for (Cell c : this.getRow()) {
+                if (c.getValue() == this.value && !c.equals(this)) c.setBlack();
+
+                c.possibleValues.remove(new Integer(this.value));
+                if(c.possibleValues.size() == 0) throw new GameState.ImpossibleStateException();
+                if(c.possibleValues.size() == 1) c.setValueAndWhiteIt(c.possibleValues.get(0));
+            }
+            for (Cell c : this.getColumn()) {
+                if (c.getValue() == this.value && !c.equals(this)) c.setBlack();
+
+                c.possibleValues.remove(new Integer(this.value));
+                if(c.possibleValues.size() == 0) throw new GameState.ImpossibleStateException();
+                if(c.possibleValues.size() == 1) c.setValueAndWhiteIt(c.possibleValues.get(0));
             }
         }
     }
@@ -153,7 +173,7 @@ public class Cell {
     public boolean equals(Object obj) {
         if (!(obj instanceof Cell)) return false;
         Cell c2 = (Cell) obj;
-        return x == c2.x && y == c2.y && value == c2.value && white == c2.white && black == c2.black;
+        return x == c2.x && y == c2.y && (black == c2.black || (value == c2.value && white == c2.white));
     }
 
     void revertColor() {
@@ -165,20 +185,14 @@ public class Cell {
         this.value = value;
     }
 
-    void setValueAndWhiteIt(Integer n) throws AlreadyColoredException, GameState.ImpossibleStateException {
+    private void setValueAndWhiteIt(Integer n) throws AlreadyColoredException, GameState.ImpossibleStateException {
         this.setValue(n);
-        for(Cell c : this.getRow()){
-            c.possibleValues.remove(n);
-        }
-        for(Cell c : this.getColumn()){
-            c.possibleValues.remove(n);
-        }
         this.revertColor();
-        this.setWhite();
+        this.setCreationWhite();
     }
 
-    Set<GameState> setAssignableValuesAndGetStates() {
-        Set<GameState> games = new HashSet<>();
+    List<GameState> setAssignableValuesAndGetStates() {
+        List<GameState> games = new ArrayList<>();
         for (Integer k : possibleValues){
             GameState g = new GameState(this.gameState);
             Cell c = g.getGrid()[x][y];
@@ -187,7 +201,16 @@ public class Cell {
                 games.add(g);
             } catch (AlreadyColoredException | GameState.ImpossibleStateException ignored) {}
         }
+        Collections.shuffle(games);
         return games;
+    }
+
+    public int getX() {
+        return x;
+    }
+
+    public int getY() {
+        return y;
     }
 
     class AlreadyColoredException extends Throwable {

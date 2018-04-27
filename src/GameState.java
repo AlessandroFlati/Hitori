@@ -79,9 +79,11 @@ public class GameState {
     private static GameState gridCreation(GameState state) {
 
         Stack<GameState> stack = new Stack<>();
+        Set<GameState> visited = new HashSet<>();
         stack.push(state);
-        while (stack.size() != 0) {
+        while (!stack.empty()) {
             GameState element = stack.pop();
+            visited.add(element);
 
 //            System.out.println("I'm trying with ");
 //            System.out.println(element);
@@ -89,15 +91,16 @@ public class GameState {
             try {
                 element.creationInfer();
             } catch (GameState.ImpossibleStateException e) {
-                return null;
+                continue;
             }
 
             if (element.isSolved()) {
+//                System.out.println("The solution to the next game should be isomorphic to:\n" + element.toString());
                 return element;
             }
 
             for (GameState g : element.getNextStepCreationOptions()) {
-                stack.push(g);
+                if(!visited.contains(g)) stack.push(g);
             }
         }
 
@@ -169,6 +172,24 @@ public class GameState {
         return blackCells;
     }
 
+    private List<Cell> getIllecitBlackCells() {
+        Set<Cell> blackCells = getBlackCells();
+        Set<Cell> illecitBlackCells = new HashSet<>();
+        for (Cell b : blackCells){
+            if(b.getNeighbors().stream().anyMatch(Cell::isBlack)){
+                illecitBlackCells.add(b);
+            }
+            else if(!this.isConnected()){
+                GameState g = new GameState(this);
+                g.grid[b.getX()][b.getY()].revertColor();
+                if(g.isConnected()) illecitBlackCells.add(b);
+            }
+        }
+        List<Cell> l = new ArrayList<>(illecitBlackCells);
+        Collections.shuffle(l);
+        return l;
+    }
+
     private Set<Cell> getNonColoredCells() {
         Set<Cell> nonColoredCells = new HashSet<>();
         for (int i = 0; i < size; i++) {
@@ -236,10 +257,9 @@ public class GameState {
 
     private Set<GameState> getNextStepCreationOptions() {
         Set<GameState> options = new HashSet<>();
-        List<Cell> cellOptions = new ArrayList<>(getBlackCells());
-        Collections.shuffle(cellOptions);
+        List<Cell> cellOptions = getIllecitBlackCells();
         for (Cell c : cellOptions) {
-            Set<GameState> possibleGames = c.setAssignableValuesAndGetStates();
+            List<GameState> possibleGames = c.setAssignableValuesAndGetStates();
             options.addAll(possibleGames);
         }
         return options;

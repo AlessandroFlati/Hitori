@@ -6,27 +6,24 @@ class Main {
 
     public static void main(String[] args) {
 
-        int size = 9;
+        int size = 20;
 
         Chrono timerToGenerate = new Chrono();
-        Chrono timerToSolve = new Chrono();
-        GameState solution = null;
-        GameState g;
-        GameState originalGame = null;
+        GameState solution;
+        GameState g = new GameState(size);
+        GameState originalGame = new GameState(g);
 
-        while (solution == null) {
-            g = new GameState(size);
-            timerToSolve = new Chrono();
-            originalGame = new GameState(g);
-            solution = BST(g);
+        System.out.println("GAME:\n" + originalGame.toString());
+        Chrono timerToSolve = new Chrono();
+        solution = BST(g);
+
+        if (solution != null) {
+            System.out.println("SOLUTION:\n" + solution.toString());
+        } else {
+            System.out.println("THERE IS NO SOLUTION TO THIS PUZZLE\n");
         }
 
-//        System.out.println("I had to generate " + counterOfImpossiblePuzzles + " semi-random impossible puzzles of size " + size + " before the one that follows.\nThis process took " + (int)(timerToGenerate.getHours()) + " hours, " + (int)(timerToGenerate.getMinutes()) + " minutes and " + (int)(timerToGenerate.getSeconds()) + " seconds.\n");
-
-        System.out.println(originalGame);
-        System.out.println("SOLUTION:\n" + solution.toString());
-
-        System.out.println("To create it, it took " + ((int) (timerToGenerate.getSeconds()*1000) ) + " milliseconds.");
+        System.out.println("To create it, it took " + ((int) (timerToGenerate.getSeconds()*1000 - timerToSolve.getSeconds()*1000) ) + " milliseconds.");
         System.out.println("To solve it, it took " + ((int) (timerToSolve.getSeconds()*1000) ) + " milliseconds.\n\n");
 
     }
@@ -40,7 +37,7 @@ class Main {
             try {
                 element.infer();
             } catch (GameState.ImpossibleStateException e) {
-                return null;
+                continue;
             }
 
             if (element.isSolved()) {
