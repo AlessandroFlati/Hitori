@@ -6,7 +6,7 @@ class Main {
 
     public static void main(String[] args) {
 
-        int size = 20;
+        int size = 11;
 
         Chrono timerToGenerate = new Chrono();
         GameState solution;

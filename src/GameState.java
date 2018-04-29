@@ -1,17 +1,18 @@
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 public class GameState {
     private Cell[][] grid;
     private final int size;
 
-    private GameState(Cell[][] grid, int size) {
+    private GameState(Cell[][] grid, int size, boolean preserveCellPossibilities) {
         this.size = size;
         this.grid = new Cell[size][size];
 
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
-                this.grid[i][j] = new Cell(grid[i][j], this);
+                this.grid[i][j] = new Cell(grid[i][j], this, preserveCellPossibilities);
             }
         }
 
@@ -23,7 +24,11 @@ public class GameState {
     }
 
     GameState(GameState game) {
-        this(game.grid, game.size);
+        this(game.grid, game.size, false);
+    }
+
+    GameState(GameState game, boolean preserveCellPossibilities){
+        this(game.grid, game.size, preserveCellPossibilities);
     }
 
     GameState(Integer[][] numbers) {
@@ -52,7 +57,7 @@ public class GameState {
         // Initialization
         for (i = 0; i < size; i++) {
             for (j = 0; j < size; j++) {
-                this.grid[i][j] = new Cell(i, j, -1, true, this);
+                this.grid[i][j] = new Cell(i, j, -1, this);
             }
         }
         for (i = 0; i < size; i++) {
@@ -60,6 +65,8 @@ public class GameState {
                 this.grid[i][j].setNeighbors();
             }
         }
+
+        this.createBlackPattern();
 
         GameState solution = gridCreation(this);
 
@@ -76,6 +83,23 @@ public class GameState {
         }
     }
 
+    private void createBlackPattern() {
+
+        List<Cell> nonColoredCells = new ArrayList<>(this.getNonColoredCells());
+        Collections.shuffle(nonColoredCells);
+        for(Cell c : nonColoredCells){
+            try {
+                c.setCreationBlack();
+            } catch (Cell.AlreadyColoredException | ImpossibleStateException e) {
+                c.revertColor();
+            }
+        }
+
+        for(Cell c: this.getNonBlackCells()){
+            c.revertColor();
+        }
+    }
+
     private static GameState gridCreation(GameState state) {
 
         Stack<GameState> stack = new Stack<>();
@@ -85,26 +109,31 @@ public class GameState {
             GameState element = stack.pop();
             visited.add(element);
 
-//            System.out.println("I'm trying with ");
-//            System.out.println(element);
-
             try {
                 element.creationInfer();
             } catch (GameState.ImpossibleStateException e) {
                 continue;
             }
 
-            if (element.isSolved()) {
-//                System.out.println("The solution to the next game should be isomorphic to:\n" + element.toString());
+//            System.out.println("I'm trying with ");
+//            System.out.println(element);
+
+            if (element.isSolved() && element.hasNoUnvaluedCell()) {
                 return element;
             }
 
-            for (GameState g : element.getNextStepCreationOptions()) {
+            Set<GameState> nextStepOptions = element.getNextStepCreationOptions();
+
+            for (GameState g : nextStepOptions) {
                 if(!visited.contains(g)) stack.push(g);
             }
         }
 
         return null;
+    }
+
+    private boolean hasNoUnvaluedCell() {
+        return this.getUnvaluedNonBlackCells().size() == 0;
     }
 
     Cell[][] getGrid() {
@@ -257,7 +286,7 @@ public class GameState {
 
     private Set<GameState> getNextStepCreationOptions() {
         Set<GameState> options = new HashSet<>();
-        List<Cell> cellOptions = getIllecitBlackCells();
+        List<Cell> cellOptions =  this.getNonBlackCells().stream().filter(cell -> cell.getValue() == -1).collect(Collectors.toList());
         for (Cell c : cellOptions) {
             List<GameState> possibleGames = c.setAssignableValuesAndGetStates();
             options.addAll(possibleGames);
@@ -279,8 +308,35 @@ public class GameState {
 
     private void creationInfer() throws ImpossibleStateException {
         GameState original = new GameState(this);
-        // TODO
-        if (!this.equals(original)) this.infer();
+
+        this.noOptionsLeft();
+        this.oneOptionLeft();
+
+        if (!this.equals(original)) this.creationInfer();
+    }
+
+    private void oneOptionLeft() throws ImpossibleStateException {
+
+        for (Cell c : this.getUnvaluedNonBlackCells()) {
+            if (c.getPossibleValues().size() == 1) {
+//                if (c.getPossibleValues().get(0).equals(this.value)) throw new GameState.ImpossibleStateException();
+                try {
+                    c.setValueAndWhiteIt(c.getPossibleValues().get(0));
+                } catch (Cell.AlreadyColoredException e) {
+                    throw new ImpossibleStateException();
+                }
+            }
+        }
+    }
+
+    private void noOptionsLeft() throws ImpossibleStateException {
+        for (Cell c : this.getUnvaluedNonBlackCells()){
+            if(c.getPossibleValues().size() == 0) throw new ImpossibleStateException();
+        }
+    }
+
+    private Set<Cell> getUnvaluedNonBlackCells() {
+        return this.getNonBlackCells().stream().filter(cell -> cell.getValue() == -1).collect(Collectors.toSet());
     }
 
     private void inferSurroundedCell() throws ImpossibleStateException {
